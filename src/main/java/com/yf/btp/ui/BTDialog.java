@@ -9,11 +9,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.v4.widget.ContentLoadingProgressBar;
-import android.support.v7.app.AppCompatDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDialog;
+import androidx.core.widget.ContentLoadingProgressBar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+
 import android.util.ArrayMap;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,9 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-
 public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismissListener, DialogInterface.OnShowListener, PrinterConnectStatCallback {
 
+    public final static int BLUETOOTH_DEVICE_CLASS_GPRINTER = 1664;
+
+    public final static int BLUETOOTH_DEVICE_CLASS_MAJOR_GPRINTER = 1536;
 
     public interface OnControlListener {
 
@@ -179,16 +184,20 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
 
                 device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                mHandler.post(() -> {
+                if (device.getBluetoothClass().getMajorDeviceClass() == BLUETOOTH_DEVICE_CLASS_MAJOR_GPRINTER
+                        && device.getBluetoothClass().getDeviceClass() == BLUETOOTH_DEVICE_CLASS_GPRINTER) {
 
-                    if (!mDiscoveryMap.containsKey(device.getAddress()) && device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                    mHandler.post(() -> {
 
-                        mDiscoveryMap.put(device.getAddress(), device);
+                        if (!mDiscoveryMap.containsKey(device.getAddress()) && device.getBondState() != BluetoothDevice.BOND_BONDED) {
 
-                        discoveryAdapter.setData(mDiscoveryMap.values());
-                    }
-                });
+                            mDiscoveryMap.put(device.getAddress(), device);
 
+                            discoveryAdapter.setData(mDiscoveryMap.values());
+                        }
+                    });
+
+                }
 
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
 
@@ -395,9 +404,7 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
             @Override
             public void onBindViewHolder(@NonNull Context context, @NonNull BtHolder holder, @NonNull BluetoothDevice dev, int position) {
 
-                holder.tx_name.setText(dev.getName());
-
-                holder.tx_mac.setText(dev.getAddress());
+                holder.tx_name.setText(String.format("%s：%s", dev.getName(), dev.getAddress()));
 
                 holder.btn_connect.setText(R.string.action_connect);
 
@@ -501,9 +508,7 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
             @Override
             public void onBindViewHolder(@NonNull Context context, @NonNull BtHolder holder, @NonNull BluetoothDevice dev, int position) {
 
-                holder.tx_name.setText(dev.getName());
-
-                holder.tx_mac.setText(dev.getAddress());
+                holder.tx_name.setText(String.format("%s：%s", dev.getName(), dev.getAddress()));
 
                 holder.btn_disconnect.setVisibility(View.GONE);
 
@@ -543,8 +548,18 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
      */
     private void loadData() {
 
-        if (pairAdapter != null && mHandler != null && mBluetoothAdapter != null)
-            mHandler.post(() -> pairAdapter.setData(mBluetoothAdapter.getBondedDevices()));
+        if (pairAdapter != null && mHandler != null && mBluetoothAdapter != null) {
+
+            final List<BluetoothDevice> devices = new ArrayList<>();
+
+            for (BluetoothDevice device : mBluetoothAdapter.getBondedDevices())
+                if (device.getBluetoothClass().getMajorDeviceClass() == BLUETOOTH_DEVICE_CLASS_MAJOR_GPRINTER
+                        && device.getBluetoothClass().getDeviceClass() == BLUETOOTH_DEVICE_CLASS_GPRINTER)
+                    devices.add(device);
+
+            mHandler.post(() -> pairAdapter.setData(devices));
+        }
+
 
         if (discoveryAdapter != null && mHandler != null && mBluetoothAdapter != null)
             mHandler.post(() -> discoveryAdapter.setData(mDiscoveryMap.values()));
@@ -563,7 +578,6 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
     public class BtHolder extends RecyclerView.ViewHolder {
 
         TextView tx_name;
-        TextView tx_mac;
 
         Button btn_connect;
 
@@ -574,7 +588,6 @@ public class BTDialog extends AppCompatDialog implements DialogInterface.OnDismi
         BtHolder(@NonNull View itemView) {
             super(itemView);
             tx_name = itemView.findViewById(R.id.tx_name);
-            tx_mac = itemView.findViewById(R.id.tx_mac);
             btn_connect = itemView.findViewById(R.id.btn_connect);
             btn_disconnect = itemView.findViewById(R.id.btn_disconnect);
             btn_pick = itemView.findViewById(R.id.btn_pick);

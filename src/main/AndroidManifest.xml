@@ -41,7 +41,7 @@
                 <action android:name="com.gprinter.aidl.GpPrintService" />
             </intent-filter>
         </service>
-        <service android:name="com.gprinter.service.AllService"></service>
+        <service android:name="com.gprinter.service.AllService" />
     </application>
 
 </manifest>
