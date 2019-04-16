@@ -351,6 +351,8 @@ public class PrinterService extends Service implements IPrinterFeatures {
     @Override
     public int printView(View v) {
 
+        if (mPickPrinter < 0) return -1;
+
         return printBitmap(BitmapUtils.drawToBitmap(v, 600, 800));
     }
 
@@ -359,6 +361,8 @@ public class PrinterService extends Service implements IPrinterFeatures {
 
     @Override
     public int printBitmap(Bitmap bm) {
+
+        if (mPickPrinter < 0) return -1;
 
         final int printerWidth = 600;
 //        final int printerWidth = bm.getWidth();
