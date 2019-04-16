@@ -1,9 +1,15 @@
 package com.yf.btp;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.util.Size;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 public interface IPrinterFeatures {
+
+    public int printBitmap(Bitmap bm, Point point, @NonNull Size size, int printWidth);
 
     boolean isValid();
 
